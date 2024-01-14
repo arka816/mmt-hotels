@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/mmt_hotels" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>

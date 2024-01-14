@@ -1,0 +1,48 @@
+1682967154159	geckodriver	INFO	Listening on 127.0.0.1:64416
+1682967157192	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--headless" "--remote-debugging-port" "64417" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\arka\\AppData\\Local\\Temp\\rust_mozprofile7SLJB9"
+*** You are running in headless mode.
+1682967157494	Marionette	INFO	Marionette enabled
+Dynamically enable window occlusion 0
+1682967157499	Marionette	INFO	Listening on port 64436
+Read port: 64436
+WebDriver BiDi listening on ws://127.0.0.1:64417
+1682967157592	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1682967157618	RemoteAgent	INFO	Proxy settings initialised: {"proxyType":"manual","httpProxy":"127.0.0.1:64415","sslProxy":"127.0.0.1:64415"}
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\arka\\AppData\\Local\\Temp\\rust_mozprofile7SLJB9\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://127.0.0.1:64417/devtools/browser/4cd2efb6-94cd-4cb1-870f-c923d9e8f69e
+1682967160830	Marionette	WARN	Ignoring event 'DOMContentLoaded' because document has an invalid readyState of 'complete'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967172995	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967195758	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967217151	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967240562	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967262614	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967284143	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967310803	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967332803	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967355563	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967379048	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: unreachable code after return statement
+JavaScript warning: https://www.makemytrip.com/wEXGwp/QBIFq/8kqdt/K8Fh/3w9u2h2SaO/dR5QFScB/SSFLDic/mfBo, line 1: WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.
+1682967401377	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'interactive'.
+[GFX1-]: Unrecognized feature ACCELERATED_CANVAS2D
