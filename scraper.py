@@ -37,7 +37,7 @@ import requests
 import socket
 import json
 from time import sleep
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -88,6 +88,7 @@ logging.basicConfig(
 
 MIN_CHROMEDRIVER_VERSION = 105
 
+CHUNK_SIZE = 4096
 
 BROWSER = 'firefox'
 
@@ -115,7 +116,7 @@ if BROWSER == 'chrome':
     capabilities["goog:loggingPrefs"] = {"performance": "ALL"}  # newer: goog:loggingPrefs
 elif BROWSER == 'firefox':
     op = FirefoxOptions()
-    # op.add_argument('--headless')
+    op.add_argument('--headless')
     op.binary_location = "C:\\Program Files\Mozilla Firefox\\firefox.exe"
     # op.add_experimental_option("excludeSwitches", ["enable-logging"])
 
@@ -145,14 +146,17 @@ class MMTWorker(QObject):
     total = pyqtSignal(int)
 
 
-    def __init__(self, city, db_name, table_name, max_hotels, max_reviews) -> None:
+    def __init__(self, city, db_name, table_name, image_dir, csv_path, max_hotels, max_reviews, save_images) -> None:
         QObject.__init__(self)
         
         self.city = city
         self.db_name = db_name
         self.table_name = table_name
+        self.image_dir = image_dir
+        self.csv_path = csv_path
         self.max_hotels = max_hotels
         self.max_reviews = max_reviews
+        self.save_images = save_images
 
         self.logger = logging.getLogger(__name__)
         self.logger.set_signal(self.addMessage, self.addError)
@@ -316,7 +320,10 @@ class MMTWorker(QObject):
 
         docs = []
 
+        self.image_req_session = requests.Session()
+
         for index, hotel in enumerate(self.hotel_responses):
+            # iterate through each hotel and download review metadata and images
             if not self.running:
                 self.halt_error()
 
@@ -333,8 +340,8 @@ class MMTWorker(QObject):
             doc['prices'] = [
                 {
                     'price': int(hotel['priceDetail']['price']),
-                    'bookingDate': (datetime.now() + timedelta(days=1)).strftime("%m%d%Y"),
-                    'snapshotDate': datetime.now().strftime("%m%d%Y"),
+                    'bookingDate': (datetime.now() + timedelta(days=1)).strftime("%d-%m-%Y"),
+                    'snapshotDate': datetime.now().strftime("%d-%m-%Y"),
                 }
             ]
             doc['coordinates'] = {
@@ -347,20 +354,25 @@ class MMTWorker(QObject):
 
             self.progress.emit(index + 1)
 
-        self.dbm.insert(docs)
-
         return docs
         
     def __review_to_dict(self, review):
-        return {
+        review_obj = {
             'id': review['id'],
             'metadata': {
                 'title': review['title'],
                 'upvote': review['upvote'],
                 'reviewText': review['reviewText']
             },
-            'images': review['images']
         }
+
+        if 'images' in review:
+            review_obj['images'] = review['images']
+
+        if 'image_paths' in review:
+            review_obj['image_paths'] = review['image_paths']
+
+        return review_obj
 
     def __cleanup__(self):
         # quit driver
@@ -609,11 +621,80 @@ class MMTWorker(QObject):
         if 'images' in reviews_df.columns:
             reviews_df['images'] = reviews_df['images'].apply(lambda l: [li['imgUrl'] for li in l] if type(l) == list else [])
 
+            if self.save_images:
+                reviews_df['image_paths'] = reviews_df['images'].apply(lambda l: [self.__download_images(li) for li in l])
+
         return reviews_df
+
+    def __download_images(self, url: str) -> str:
+        '''
+            download the image and return the path
+        '''
+        if not url.startswith('http:') or not url.startswith('https:'):
+            url = 'https:' + url
+
+        url_components = urlparse(url)
+        path_param = url_components.path.strip('/')
+
+        image_path = os.path.join(self.image_dir, path_param)
+
+        os.makedirs(os.path.dirname(image_path), exist_ok=True)
+
+        r = self.image_req_session.get(url, stream=True)
+        if r.status_code == 200:
+            try:
+                with open(image_path, 'wb') as f:
+                    for chunk in r.iter_content(CHUNK_SIZE):
+                        if not self.running:
+                            self._halt_error()
+                            return
+                        f.write(chunk)
+            except:
+                self.logger.warning(f"could not write image file")
+            else:
+                self.logger.info(f"saved image file at {image_path}")
+                return image_path
+        else:
+            self.addMessage.emit(f"could not write image file")
 
     def halt_error(self):
         self.addMessage.emit("worker halted forcefully")
         self.finished.emit([])
+
+    def __serialize_csv(self, docs):
+        '''
+            only stores first price for each observed hotel in case of multiple prices
+        '''
+        dfs = []
+
+        for doc in docs:
+            titles = [review['metadata']['title'] for review in doc['reviews']]
+            upvotes = [review['metadata']['upvote'] for review in doc['reviews']]
+            review_texts = [review['metadata']['reviewText'] for review in doc['reviews']]
+            image_urls = [review['images'] if 'images' in review else '' for review in doc['reviews']]
+            image_paths = [review['image_paths'] if 'image_paths' in review else '' for review in doc['reviews']]
+
+            df = pd.DataFrame({
+                'title': titles, 
+                'upvotes': upvotes, 
+                'text': review_texts,
+                'image_urls': image_urls,
+                'image_paths': image_paths
+            })
+
+            df['hotel_name'] = doc['name']
+            df['lat'] = doc['coordinates']['lat']
+            df['lng'] = doc['coordinates']['lng']
+            df['price'] = doc['prices'][0]['price']
+            df['booking_date'] = doc['prices'][0]['bookingDate']
+            df['snapshot_date'] = doc['prices'][0]['snapshotDate']
+
+            dfs.append(df)
+
+        df = pd.concat(dfs)
+
+        return df
+
 
     def run(self):
         self.running = True
@@ -644,6 +725,13 @@ class MMTWorker(QObject):
 
         # Step 3: scroll and scrape data from network requests
         docs = self.__get_hotel_data()
+
+        # Step 4: insert into database
+        self.dbm.insert(docs)
+
+        # Step 5: save as csv file
+        data = self.__serialize_csv(docs)
+        data.to_csv(self.csv_path)
 
         self.finished.emit(docs)
 

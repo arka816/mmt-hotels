@@ -85,6 +85,12 @@ class DBManager:
                             'items': {
                                 'bsonType': 'string'
                             }
+                        },
+                        'image_paths': {
+                            'bsonType': 'array',
+                            'items': {
+                                'bsonType': 'string'
+                            }
                         }
                     }
                 }
@@ -159,16 +165,16 @@ class DBManager:
                 # doc exists -> update document
                 old_doc = docs[0]
 
-                old_prices = old_doc.prices
-                new_prices = doc.prices
+                old_prices = old_doc['prices']
+                new_prices = doc['prices']
 
                 prices_df = pd.DataFrame(old_prices + new_prices)
                 prices_df.drop_duplicates(subset=['bookingDate', 'snapshotDate'], inplace=True)
 
                 prices = prices_df.to_dict('records')
 
-                old_reviews = old_doc.reviews
-                new_reviews = doc.reviews
+                old_reviews = old_doc['reviews']
+                new_reviews = doc['reviews']
 
                 reviews_df = pd.DataFrame(old_reviews + new_reviews)
                 reviews_df.drop_duplicates(subset=['id'], inplace=True)

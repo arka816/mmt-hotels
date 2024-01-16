@@ -71,6 +71,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
         self.elem_config_map = {
             'KEYWORD' : self.keyword,
             'IMAGE_DIR': self.image_dir,
+            'CSV_PATH': self.csv_path,
             'MAX_HOTELS': self.max_hotels,
             'MAX_REVIEWS': self.max_reviews,
             'SAVE_IMAGES': self.save_images,
@@ -84,6 +85,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
         self.start_btn.clicked.connect(self._start_download_thread)
         self.stop_btn.clicked.connect(self._stop_download_thread)
         self.image_dialog_btn.clicked.connect(self._select_output_folder)
+        self.csv_dialog_btn.clicked.connect(self._select_csv_file)
         self.remove_layers_btn.clicked.connect(self._remove_layers)
         self.close_windows_btn.clicked.connect(self._close_browser_windows)
 
@@ -94,6 +96,10 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
     def _select_output_folder(self):
         outputDir = QFileDialog.getExistingDirectory(self, "choose output directory")
         self.image_dir.setText(outputDir)
+
+    def _select_csv_file(self):
+        csvFilePath, _ = QFileDialog.getSaveFileName(self, "choose csv file", "", "*.csv")
+        self.csv_path.setText(csvFilePath)
 
     def _save_input(self):
         try:
@@ -173,8 +179,18 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
             elem.setFocus()
             elem.selectAll()
 
-        def path_error(elem, path):
+        def dirpath_error(elem, path):
             QMessageBox.warning(self, "Error", f"the specified path {path} does not exist or is not a directory")
+            elem.setFocus()
+            elem.selectAll()
+
+        def filepath_error(elem, path):
+            QMessageBox.warning(self, "Error", f"the specified file path {path} does not exist")
+            elem.setFocus()
+            elem.selectAll()
+
+        def path_access_error(elem, path):
+            QMessageBox.warning(self, "Error", f"specified path {path} is not accessible")
             elem.setFocus()
             elem.selectAll()
 
@@ -188,15 +204,27 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
                 max_hotels = int(self.max_hotels.text())
             except:
                 int_error(self.max_hotels, "MAX_HOTELS")
+                return
 
             try:
                 max_reviews = int(self.max_reviews.text())
             except:
                 int_error(self.max_reviews, "MAX_REVIEWS")
+                return
 
             image_dir = self.image_dir.text()
-            if not os.path.exists(image_dir) or not os.path.isdir(image_dir):
-                path_error(self.image_dir, image_dir)
+            if not os.path.isdir(image_dir):
+                dirpath_error(self.image_dir, image_dir)
+                return
+            
+            if not os.access(image_dir, os.W_OK):
+                path_access_error(self.image_dir, image_dir)
+                return
+
+            csv_path = self.csv_path.text()
+            if not os.access(os.path.dirname(csv_path), os.W_OK):
+                path_access_error(self.csv_path, csv_path)
+                return
 
             keyword = self.keyword.text()
             dbname = self.dbname.text()
@@ -204,12 +232,15 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
 
             if len(keyword) == 0:
                 empty_error(self.keyword, "Keyword")
+                return
             
             if len(dbname) == 0:
                 empty_error(self.dbname, "Database name")
+                return
             
             if len(tablename) == 0:
                 empty_error(self.tablname, "Table name")
+                return
 
             save_images = self.save_images.isChecked()
 
@@ -222,7 +253,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
 
                 # create worker
                 self.thread = QThread()
-                self.worker = MMTWorker(keyword, dbname, tablename, max_hotels, max_reviews)
+                self.worker = MMTWorker(keyword, dbname, tablename, image_dir, csv_path, max_hotels, max_reviews, save_images)
                 self.worker.moveToThread(self.thread)
 
                 # connect signals to slots
@@ -265,7 +296,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
     def _progress_from_worker(self, progress):
         self.progress_bar.setValue(
             self.__HOTEL_LOAD_PROGRESS + 
-            (100 - self.__HOTEL_LOAD_PROGRESS - self.__DRAW_LAYER_PROGRESS) * progress / self.result_count
+            int((100 - self.__HOTEL_LOAD_PROGRESS - self.__DRAW_LAYER_PROGRESS) * progress / self.result_count)
         )
 
     def _total_from_worker(self, total):
