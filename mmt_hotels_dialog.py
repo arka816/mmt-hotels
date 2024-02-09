@@ -37,8 +37,13 @@ from PyQt5.QtWebKitWidgets import QWebView
 
 from scraper import MMTWorker
 
+from operator import itemgetter
+import json
 
 import pandas as pd
+
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'template_mmt_api.html'), 'r') as f:
+    __HTML_TEMPLATE__ = f.read()
 
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
@@ -49,6 +54,8 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
     __HOTEL_LOAD_PROGRESS = 10
     __DRAW_LAYER_PROGRESS = 10
+
+    __FEATURE_NECESSARY_COLUMNS = {'name', 'prices', 'coordinates', 'reviews'}
 
     def __init__(self, parent=None):
         """Constructor."""
@@ -75,6 +82,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
             'MAX_HOTELS': self.max_hotels,
             'MAX_REVIEWS': self.max_reviews,
             'SAVE_IMAGES': self.save_images,
+            'SHOW_IMAGES': self.show_images,
             'TABLE_NAME': self.tablename,
             'DB_NAME': self.dbname
         }
@@ -90,8 +98,10 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
         self.close_windows_btn.clicked.connect(self._close_browser_windows)
 
         self._load_prev_input()
-        self._cleanup()
+        self._pre_cleanup()
 
+        # connect to post cleanup call
+        self.rejected.connect(self._post_cleanup)
 
     def _select_output_folder(self):
         outputDir = QFileDialog.getExistingDirectory(self, "choose output directory")
@@ -110,7 +120,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
         l = list()
 
         for key, val in self.elem_config_map.items():
-            if key == 'SAVE_IMAGES':
+            if key == 'SAVE_IMAGES' or key == 'SHOW_IMAGES':
                 l.append(f"{key}={'true' if val.isChecked() else 'false'}")
             else:
                 l.append(f"{key}={val.text()}")
@@ -132,7 +142,7 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
                 key, val = line.strip('\n').split("=")
                 elem = self.elem_config_map[key]
 
-                if key == 'SAVE_IMAGES':
+                if key == 'SAVE_IMAGES' or key == 'SHOW_IMAGES':
                     elem.setChecked(val == "true")
                 else:    
                     elem.setText(val)
@@ -150,12 +160,12 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def _remove_layers(self):
         try:
-            QgsProject.instance().removeMapLayers([self.boundaryLayer.id(), self.markerLayer.id()])
+            QgsProject.instance().removeMapLayers([self.markerLayer.id()])
             QgsProject.instance().refreshAllLayers()
         except:
             pass
 
-    def _cleanup(self):
+    def _pre_cleanup(self):
         # set logbox empty
         self.log_box.setPlainText("")
 
@@ -171,8 +181,18 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
         # close open browser windows
         self._close_browser_windows()
 
+    def _post_cleanup(self):
+        # save inputs
+        self._save_input()
+
+        # clean vector layer
+        self._remove_layers()
+
+        # close open browser windows
+        self._close_browser_windows()
+
     def _start_download_thread(self):
-        self._cleanup()
+        self._pre_cleanup()
 
         def int_error(elem, elem_name):
             QMessageBox.warning(self, "Error", f"{elem_name} is not numeric")
@@ -274,18 +294,99 @@ class MMTHotelsDialog(QtWidgets.QDialog, FORM_CLASS):
                 def worker_finished(review_data): 
                     self.start_btn.setEnabled(True)    
                     self.stop_btn.setEnabled(False)
+                    self.remove_layers_btn.setEnabled(True)
+                    self.close_windows_btn.setEnabled(True)
+
                     self.isDownloadInProgress = False
                     self.progress_bar.setValue(self.progress_bar.maximum())  
 
-                    if type(review_data) == list and len(review_data) > 0:    
-                        self.review_data = review_data
+                    if type(review_data) == list and len(review_data) > 0:
+                        self._draw_layers(review_data)
+                    else:
+                        QMessageBox.warning(self, "Warning", "Empty list of reviews received from worker")
                     
+
                 self.worker.finished.connect(worker_finished)  
             else:
                 QMessageBox.warning(self, "Error", "Can not download without appropriate data!")
       
+    def _draw_layers(self, data):
+        self.log_box.append("drawing vector layers...")
+
+        # create marker layer
+        self.markerLayer = QgsVectorLayer("Point?crs=epsg:4326", "mmt markers", "memory")
+        self.markerProvider = self.markerLayer.dataProvider()
+        self.markerLayer.startEditing()
+
+        self.markerProvider.addAttributes([
+            QgsField('name', QVariant.String),
+            QgsField('latitude', QVariant.Double),
+            QgsField('longitude', QVariant.Double),
+            QgsField('price', QVariant.String),
+            QgsField('reviews', QVariant.List)
+        ])
+
+        self.log_box.append(f"adding {len(data)} marker{'' if len(data) == 1 else 's'}")
+
+        for item in data:
+            if self.__FEATURE_NECESSARY_COLUMNS <= set(item.keys()):
+                if len(prices := item['prices']) > 0:
+                    price = str(int(prices[0]['price']))
+                else:
+                    price = ''
+
+                try:
+                    lat, lng = itemgetter('lat', 'lng')(item['coordinates'])
+                except Exception as ex:
+                    self.log_box.append(f"1. failed to add marker {ex}")
+                else:
+                    marker = QgsFeature()
+                    marker.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lng, lat)))
+                    marker.setAttributes([item['name'], lat, lng, price, item['reviews']])
+                    self.markerProvider.addFeatures([marker])
+                    self.log_box.append(
+                        f"added marker at {abs(lat)} {'N' if lat >= 0 else 'S'}, {abs(lng)} {'E' if lng >= 0 else 'W'}"
+                    )
+            else:
+                self.log_box.append(f"failed to add marker. keys: {item.keys()}")
+
+        self.markerLayer.commitChanges()
+        QgsProject.instance().addMapLayer(self.markerLayer)
+
+        self.log_box.append(f"commited {len(data)} marker{'' if len(data) == 1 else 's'}")
+
+        # add selection handler
+        self.markerLayer.selectionChanged.connect(self._handle_feature_selection)
+        self.webViews = []
+
     def _stop_download_thread(self):
         self.worker.stop()
+
+    def _handle_feature_selection(self):
+        selFeatures = self.markerLayer.selectedFeatures()
+        if len(selFeatures) > 0:
+            for feature in selFeatures:
+                attrs = feature.attributes()
+                name, lat, lng, price, reviews = attrs
+
+                # draw popup on web view or use native qt dialog
+                self._open_web_view(name, lat, lng, price, reviews)
+
+    def _open_web_view(self, name, lat, lng, price, reviews):
+        webView = QWebView()
+        self.webViews.append(webView)
+
+        self.log_box.append(f"loading page for: {name}")
+
+        reviewsString = json.dumps(reviews)
+
+        webView.setHtml(__HTML_TEMPLATE__.format(
+            name, 
+            name,
+            reviewsString, 
+            "true" if self.show_images.isChecked() else "false"
+        ))
+        webView.show()
 
     def _message_from_worker(self, message):
         self.log_box.append(message)

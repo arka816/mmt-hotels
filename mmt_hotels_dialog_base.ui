@@ -276,7 +276,7 @@
      <rect>
       <x>10</x>
       <y>210</y>
-      <width>371</width>
+      <width>191</width>
       <height>31</height>
      </rect>
     </property>
@@ -318,6 +318,19 @@
     </property>
     <property name="text">
      <string>CSV File</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="show_images">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>210</y>
+      <width>191</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Show Images</string>
     </property>
    </widget>
   </widget>
